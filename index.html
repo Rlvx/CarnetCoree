@@ -185,6 +185,9 @@ p{ margin:0; }
 .day-date{ font-size:.82rem; font-weight:600; color:var(--ink-soft); display:block; margin-top:.15rem; }
 .day-chevron{ flex:none; font-family:'Plex Mono',monospace; color:var(--ink-soft); font-weight:700; transition:transform .2s; }
 .day[open] .day-chevron{ transform:rotate(90deg); }
+.day{ scroll-margin-top:5.2rem; }
+.day.today{ border:2px solid var(--city); box-shadow:0 0 0 4px color-mix(in srgb, var(--city) 18%, transparent); }
+.today-badge{ flex:none; font-family:'Plex Mono',monospace; font-size:.66rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--city); border:1px solid var(--city); border-radius:99px; padding:.15rem .5rem; }
 .day-body{ padding:0 1.15rem 1.1rem; border-top:1px solid var(--line); }
 .timeline{ display:grid; margin-top:.9rem; }
 .trow{ display:grid; grid-template-columns:5.6rem 1fr; gap:.75rem; padding:.5rem 0; border-top:1px solid var(--line); }
@@ -913,6 +916,31 @@ footer .foot-title{ font-size:1.15rem; font-weight:700; color:var(--ink); margin
   } else {
     revealEls.forEach(function(el){ el.classList.add('in'); });
   }
+
+  // --- Aujourd'hui : ouvrir et défiler jusqu'au jour en cours (heure de Séoul) ---
+  (function(){
+    var parts = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).split('-');
+    var todayUTC = Date.UTC(+parts[0], +parts[1]-1, +parts[2]);
+    var n = Math.round((todayUTC - Date.UTC(2026,8,24)) / 86400000) + 1; // J1 = 24 sept 2026
+    if(n < 1 || n > 21) return;
+    var day = null;
+    document.querySelectorAll('.day').forEach(function(d){
+      var num = d.querySelector('.day-num');
+      if(num && num.textContent.trim() === 'J'+n) day = d;
+    });
+    if(!day) return;
+    var leg = day.closest('.leg');
+    if(leg){ leg.querySelectorAll('.day').forEach(function(d){ d.open = false; }); leg.classList.add('in'); }
+    day.open = true;
+    day.classList.add('today');
+    var badge = document.createElement('span');
+    badge.className = 'today-badge';
+    badge.textContent = "Aujourd'hui";
+    day.querySelector('.day-chevron').before(badge);
+    if(!location.hash){
+      requestAnimationFrame(function(){ day.scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'start'}); });
+    }
+  })();
 
   var links = Array.prototype.slice.call(document.querySelectorAll('#pillnav a'));
   var targets = links.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
